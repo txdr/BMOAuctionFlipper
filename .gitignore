@@ -2,3 +2,7 @@ node_modules/
 package-lock.json
 build/
 configs
+license.json
+auctionflipperv2-linux
+auctionflipperv2-macos
+auctionflipperv2-win.exe

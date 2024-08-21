@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pkg ./package.json"
   },
   "author": "shayen777",
   "license": "ISC",
@@ -20,5 +20,13 @@
     "mineflayer": "^4.20.1",
     "readline": "^1.3.0",
     "set-interval-async": "^3.0.3"
+  },
+  "bin": "index.js",
+  "pkg": {
+    "scripts": [
+      "node_modules/axios/*",
+      "./index.js"
+    ],
+    "assets": ["node_modules/axios/dist/node/*"]
   }
 }

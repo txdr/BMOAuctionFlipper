@@ -20,7 +20,7 @@ module.exports = {
         }
         return number.toString();
     },
-    configPath: "./configs/",
+    configPath: process.cwd() + "\\configs\\",
     fileExists: (file) => fs.access(file, fs.constants.F_OK)
         .then(() => true)
         .catch(() => false)

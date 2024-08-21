@@ -5,12 +5,12 @@ const mUtils = require("./utils/miscUtils.js");
 const chalk = require("chalk");
 const fs = require("fs").promises;
 const readline = require("readline/promises");
-const authPath = (require("appdata-path"))() + "\\BMOAuth";
+const path = require("path");
+const authPath = path.resolve(process.cwd(), (require("appdata-path"))() + "\\BMOAuth");
 const FlipperManager = require("./bot/flipperManager.js");
 
 let rlp;
 const restServer = "http://localhost:3001";
-
 (async () => {
     setTitle("Auction Flipper v1.0.0");
     let current = 1;
@@ -122,7 +122,6 @@ const restServer = "http://localhost:3001";
         accounts.set(data.username, data.token);
     });
     const accountNames = Array.from(accounts.keys());
-
 
     try {
         await fs.access(mUtils.configPath);
