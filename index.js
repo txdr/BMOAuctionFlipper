@@ -84,7 +84,7 @@ const restServer = "http://localhost:3001";
         console.log(chalk.yellow("License expired, or no license provided. Please provide a license key."));
         const askKey = async (isSecond = false) => {
             if (isSecond) {
-                //console.clear();
+                console.clear();
                 console.log(chalk.red("Invalid key."));
             }
             providedKey = await rlp.question(" > ");
