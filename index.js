@@ -9,6 +9,7 @@ const authPath = (require("appdata-path"))() + "\\BMOAuth";
 const FlipperManager = require("./bot/flipperManager.js");
 
 let rlp;
+const restServer = "http://localhost:3001";
 
 (async () => {
     setTitle("Auction Flipper v1.0.0");
@@ -45,7 +46,68 @@ let rlp;
         await mUtils.sleep(250);
     }
 
+    rlp = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: true
+    });
+
     console.clear();
+    const exists = await mUtils.fileExists("./license.json");
+    if (!exists) {
+        await fs.writeFile("./license.json", JSON.stringify({
+            licenseKey: ""
+        }));
+    }
+
+    let allowLicensePass = false;
+    let checkedLicenseFile = false;
+    let canAskForKeyAgain = true;
+    let check, contents, providedKey;
+    while (true) {
+        if (allowLicensePass) {
+            break;
+        }
+        if (!checkedLicenseFile) {
+            contents = require("./license.json");
+            check = await fetch(`${restServer}/verify/${contents.licenseKey}`);
+            check = await check.text();
+            check = JSON.parse(check);
+            if (check.verified) {
+                allowLicensePass = true;
+                continue;
+            }
+            checkedLicenseFile = true;
+            continue;
+        }
+        console.clear();
+        console.log(chalk.yellow("License expired, or no license provided. Please provide a license key."));
+        const askKey = async (isSecond = false) => {
+            if (isSecond) {
+                //console.clear();
+                console.log(chalk.red("Invalid key."));
+            }
+            providedKey = await rlp.question(" > ");
+            check = await fetch(`${restServer}/verify/${providedKey}`, { method: "GET" });
+            check = await check.text();
+            check = JSON.parse(check);
+            if (check.verified) {
+                canAskForKeyAgain = false;
+                allowLicensePass = true;
+                return true;
+            }
+            await askKey(true);
+        };
+        if (canAskForKeyAgain) {
+            await askKey();
+        }
+    }
+    if (checkedLicenseFile) {
+        await fs.writeFile("./license.json", JSON.stringify({
+            licenseKey: providedKey
+        }));
+    }
+
     try {
         await fs.access(authPath);
     } catch (e) {
@@ -84,11 +146,6 @@ let rlp;
             chalk.gray(`Configuration Names: ${configurationNames.join(", ")}`)
         ].join("\n")));
     };
-    rlp = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: true
-    });
     let rlpAccount, rlpConfiguration;
 
     const secondQuestion = async () => {

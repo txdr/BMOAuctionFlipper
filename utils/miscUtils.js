@@ -1,3 +1,5 @@
+const fs = require("fs").promises;
+
 module.exports = {
     rand: (min, max) => {
         const minCeiled = Math.ceil(min);
@@ -18,5 +20,8 @@ module.exports = {
         }
         return number.toString();
     },
-    configPath: "./configs/"
+    configPath: "./configs/",
+    fileExists: (file) => fs.access(file, fs.constants.F_OK)
+        .then(() => true)
+        .catch(() => false)
 };
