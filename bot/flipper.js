@@ -3,6 +3,7 @@ const mineUtils = require("../utils/minecraftUtils.js");
 const miscUtils = require("../utils/miscUtils.js");
 const menus = require("./menuTypes.js");
 const { setIntervalAsync, clearIntervalAsync } = require("set-interval-async");
+const fs = require("fs").promises;
 
 class Flipper {
 
@@ -18,6 +19,16 @@ class Flipper {
         this.lastItemPrice = 0;
         this.lastPricePerItem = 0;
         this.purchasing = false;
+        this.mode = this.config.mode;
+        this.flipping = this.mode !== "sniping";
+        this.timesRefreshed = 0;
+        this.debug = this.config["debug"];
+        this.lastPurchasedItem = null;
+        this.lastPurchasedItemSellingPrice = -1;
+        this.selling = false;
+        this.lastPurchaseCount = -1;
+        this.dStatus = 0;
+        this.lastItemCustomName = "";
 
         (async () => {
             await this.initialize();
@@ -52,11 +63,23 @@ class Flipper {
         if (this.waitingMenuClose === menus.hold) {
             // to-do: track which windows are open and handle random closing here.
             // note: this can change in certain conditions bruh (note: nevermind)
+            // idek what i was talkin bout here
             return;
         }
         switch (this.waitingMenuClose) {
             case menus.waitingAuctionConfirm:
                 this.waitingMenuClose = menus.hold;
+                await this.bot.closeWindow(window);
+
+                if (this.flipping && this.lastPurchasedItemSellingPrice > 1) {
+                    this.selling = true;
+                    await miscUtils.sleep(250);
+                    await this.bot.chat(`/ah sell ${this.lastPurchasedItemSellingPrice * this.lastPurchaseCount}`);
+                    this.waitingMenu = menus.waitingAuctionHouse;
+                    this.selling = false;
+                    await miscUtils.sleep(500);
+                }
+
                 this.waitingMenu = menus.waitingAuctionHouse;
                 await miscUtils.sleep(250);
                 await this.bot.chat("/ah");
@@ -77,7 +100,9 @@ class Flipper {
                 break;
             case menus.waitingAuctionHouse:
                 this.waitingMenu = menus.hold;
+                let passEnchants;
                 const refreshLoop = setIntervalAsync(async () => {
+                    passEnchants = true;
                     const item = await mineUtils.findItemByCustomName(window, "§6§lRefresh Auction");
                     if (!item || !item.slot) {
                         await clearIntervalAsync(refreshLoop);
@@ -89,16 +114,61 @@ class Flipper {
                     }
                     await this.bot.clickWindow(item.slot, 0, 0);
                     this.lastRefresh = (new Date()).getTime();
+                    this.timesRefreshed++;
+                    if (this.debug && this.timesRefreshed < 2) {
+                        let items = [];
+                        for (const i of window.containerItems()) {
+                            items.push({
+                                normalName: i.name,
+                                customName: i.customName,
+                                customNameStripped: mineUtils.stripColorCodes(i.customName),
+                                parsedEnchants: mineUtils.parseEnchantments(mineUtils.getLoreStripped(i)),
+                                loreStripped: mineUtils.getLoreStripped(i)
+                            });
+                        }
+                        await fs.writeFile("./log.json", JSON.stringify(items));
+                    }
+
                     await miscUtils.sleep(250);
                     const newItem = window.containerItems()[0];
                     this.lastItemName = mineUtils.stripColorCodes(newItem.customName);
                     this.lastItemPrice = mineUtils.getItemPrice(newItem);
                     this.lastPricePerItem = this.lastItemPrice / newItem.count;
-                    if (this.config.items[this.lastItemName]) {
-                        const data = this.config.items[this.lastItemName];
+                    if (this.config.items[this.lastItemName] || this.config.items[newItem.name]) {
+                        let data = this.config.items[this.lastItemName];
+                        if (!data) {
+                            data = this.config.items[newItem.name];
+                        }
+                        if (data.hasOwnProperty("ensureItemIs")) {
+                            if (newItem.name !== data.ensureItemIs) {
+                                return;
+                            }
+                        }
+                        if (data.hasOwnProperty("ensureEnchants")) {
+                            const enchantsHas = mineUtils.parseEnchantments(mineUtils.getLoreStripped(newItem));
+                            Object.keys(data.ensureEnchants).forEach((enchantName) => {
+                                 const levelNeeded = data.ensureEnchants[enchantName];
+                                 if (!enchantsHas.has(enchantName)) {
+                                     passEnchants = false;
+                                     return;
+                                 }
+                                 if (enchantsHas.get(enchantName) < levelNeeded) {
+                                     passEnchants = false;
+                                 }
+                            });
+                        }
+                        if (!passEnchants) {
+                            return;
+                        }
                         if (this.lastPricePerItem >= data.maxPrice) {
                             return;
                         }
+                        if (data.hasOwnProperty("resellPrice")) {
+                            this.lastPurchasedItemSellingPrice = data.resellPrice;
+                        }
+                        this.lastPurchasedItem = newItem;
+                        this.lastItemCustomName = newItem.customName;
+                        this.lastPurchaseCount = newItem.count;
                         this.purchasing = true;
                         this.waitingMenu = menus.waitingAuctionConfirm;
                         while(this.waitingMenu !== menus.hold) { // Just assert everything gets clicked, this part of the process is weird idk why.

@@ -27,6 +27,7 @@
       "node_modules/axios/*",
       "./index.js"
     ],
-    "assets": ["node_modules/axios/dist/node/*"]
+    "assets": ["node_modules/axios/dist/node/*"],
+    "outputPath": "./build"
   }
 }

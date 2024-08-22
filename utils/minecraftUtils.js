@@ -1,4 +1,5 @@
 const axios = require("axios");
+const miscUtils = require("./miscUtils.js");
 
 const getLore = (item) => {
     if (item?.nbt?.value?.display?.value?.Lore?.value?.value) {
@@ -7,7 +8,19 @@ const getLore = (item) => {
     return [];
 };
 
+const stripColorCodes = (input) => {
+    return input.replace(/§[0-9a-fk-or]/gi, "");
+};
+
 module.exports = {
+    getLore,
+    getLoreStripped: (item) => {
+        let replaced = [];
+        for (const p of getLore(item)) {
+            replaced.push(stripColorCodes(p));
+        }
+        return replaced;
+    },
     getClientToken: async (accessToken) => {
         return axios.get("https://api.minecraftservices.com/minecraft/profile", {
             headers: {
@@ -27,9 +40,7 @@ module.exports = {
             resolve(item);
         });
     },
-    stripColorCodes: (input) => {
-        return input.replace(/§[0-9a-fk-or]/gi, "");
-    },
+    stripColorCodes,
     getItemPrice: (item) => {
         if (!item) {
             return -1;
@@ -48,4 +59,17 @@ module.exports = {
         }
         return -1;
     },
+    parseEnchantments: (inputArray) => {
+        const enchantmentMap = new Map();
+        const enchantmentRegex = /^([\w\s]+?)\s+([IVXLCDM]+)$/;
+        for (const line of inputArray) {
+            const trimmedLine = line.trim();
+            const match = enchantmentRegex.exec(trimmedLine);
+            if (match) {
+                const enchantName = match[1].trim();
+                enchantmentMap.set(enchantName, miscUtils.romanToInt(match[2]));
+            }
+        }
+        return enchantmentMap;
+    }
 };

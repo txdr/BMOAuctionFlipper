@@ -10,7 +10,7 @@ const authPath = path.resolve(process.cwd(), (require("appdata-path"))() + "\\BM
 const FlipperManager = require("./bot/flipperManager.js");
 
 let rlp;
-const restServer = "http://localhost:3001";
+const restServer = "http://173.240.150.168:26940";
 (async () => {
     setTitle("Auction Flipper v1.0.0");
     let current = 1;
@@ -60,17 +60,19 @@ const restServer = "http://localhost:3001";
         }));
     }
 
+    // This part is making sure the user has a valid license key.
     let allowLicensePass = false;
     let checkedLicenseFile = false;
     let canAskForKeyAgain = true;
-    let check, contents, providedKey;
+    let check, contents, providedKey, licenseKey;
     while (true) {
         if (allowLicensePass) {
             break;
         }
         if (!checkedLicenseFile) {
             contents = require("./license.json");
-            check = await fetch(`${restServer}/verify/${contents.licenseKey}`);
+            licenseKey = contents.licenseKey === "" ? "nan" : contents.licenseKey;
+            check = await fetch(restServer + `/verify/${licenseKey}`);
             check = await check.text();
             check = JSON.parse(check);
             if (check.verified) {
@@ -88,6 +90,7 @@ const restServer = "http://localhost:3001";
                 console.log(chalk.red("Invalid key."));
             }
             providedKey = await rlp.question(" > ");
+            providedKey = providedKey === "" ? "nan" : providedKey;
             check = await fetch(`${restServer}/verify/${providedKey}`, { method: "GET" });
             check = await check.text();
             check = JSON.parse(check);
@@ -108,6 +111,7 @@ const restServer = "http://localhost:3001";
         }));
     }
 
+    // This part is making sure the user has accounts in the authentication manager.
     try {
         await fs.access(authPath);
     } catch (e) {
@@ -123,6 +127,7 @@ const restServer = "http://localhost:3001";
     });
     const accountNames = Array.from(accounts.keys());
 
+    // This part ensures that the user has a configuration folder.
     try {
         await fs.access(mUtils.configPath);
     } catch (e) {

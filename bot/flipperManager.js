@@ -17,11 +17,12 @@ class FlipperManager {
             this.flippers.forEach((flipper, name) => {
                 current++;
                 console.log([
-                    chalk.green(`Bot #${current} - ${name}${flipper.purchasing ? chalk.greenBright(" [PURCHASING]") : ""}`),
+                    chalk.green(`Bot #${current} - ${name} ${flipper.purchasing ? chalk.greenBright(" [PURCHASING]") : ""}${flipper.selling ? chalk.greenBright("[RESELLING]") : ""}`),
                     chalk.gray("Last refresh: ") + chalk.white((new Date()).getTime() - flipper.lastRefresh + "ms"),
                     chalk.gray("Respawns: ") + chalk.white(flipper.timesSpawned),
                     chalk.gray("Last Item: ") + chalk.white(flipper.lastItemName),
-                    chalk.gray("Last Item Price: ") + chalk.white(mUtils.formatNumberSuffix(flipper.lastItemPrice)) + chalk.gray("(") + chalk.white(mUtils.formatNumberSuffix(flipper.lastPricePerItem) + "/per") + chalk.gray(")")
+                    chalk.gray("Last Item Price: ") + chalk.white(mUtils.formatNumberSuffix(flipper.lastItemPrice)) + chalk.gray("(") + chalk.white(mUtils.formatNumberSuffix(flipper.lastPricePerItem) + "/per") + chalk.gray(")"),
+                    chalk.gray("dStatus: ") + chalk.white(flipper.dStatus)
                 ].join("\n"));
             });
 

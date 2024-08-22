@@ -11,7 +11,7 @@ module.exports = {
     },
     formatNumberSuffix: (number) => {
         const suffixes = ["K", "M", "B", "T", "Q", "QI"];
-        const thresholds = [1_000, 1_000_000, 1_000_000_000, 1_000_000_000_000, 1_000_000_000_000_000, 1_000_000_000_000_000_000]; // Corresponding thresholds
+        const thresholds = [1_000, 1_000_000, 1_000_000_000, 1_000_000_000_000, 1_000_000_000_000_000, 1_000_000_000_000_000_000];
 
         for (let i = suffixes.length - 1; i >= 0; i--) {
             if (number >= thresholds[i]) {
@@ -23,5 +23,23 @@ module.exports = {
     configPath: process.cwd() + "\\configs\\",
     fileExists: (file) => fs.access(file, fs.constants.F_OK)
         .then(() => true)
-        .catch(() => false)
+        .catch(() => false),
+    romanToInt: (roman) => {
+        const romanNumeralMap = {
+            "I": 1, "V": 5,
+            "X": 10, "L": 50, "C": 100,
+            "D": 500, "M": 1000
+        };
+        let intValue = 0;
+        for (let i = 0; i < roman.length; i++) {
+            const current = romanNumeralMap[roman[i]];
+            const next = romanNumeralMap[roman[i + 1]];
+            if (next && current < next) {
+                intValue -= current;
+            } else {
+                intValue += current;
+            }
+        }
+        return intValue;
+    }
 };
